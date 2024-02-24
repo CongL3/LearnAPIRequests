@@ -3,16 +3,7 @@ import Combine
 
 let apiClient = APIClient()
 
-apiClient.fetchData(endpoint: .pokemon(name: "ditto")) { (pokemon: Pokemon?, error: APIError?) in
-	if let pokemon = pokemon {
-		print("Name: \(pokemon.name)")
-		print("ID: \(pokemon.id)")
-		print("Image URL: \(pokemon.sprites.frontDefault)")
-	}
-	if let error = error {
-		print("Error: \(error)")
-	}
-}
+apiClient.fetchData(endpoint: .pokemon(name: "ditto"))
 
 apiClient.fetchData(endpoint: .pokemon(name: "ditto")) { (result: Result<Pokemon, APIError>) in
 	switch result {
