@@ -4,5 +4,6 @@
         <page name='APIClients'/>
         <page name='LoginProviding'/>
         <page name='Sequental API requests'/>
+        <page name='Links'/>
     </pages>
 </playground>
