@@ -3,8 +3,6 @@ import Combine
 
 let apiClient = APIClient()
 
-apiClient.fetchData(endpoint: .pokemon(name: "ditto"))
-
 apiClient.fetchData(endpoint: .pokemon(name: "ditto")) { (result: Result<Pokemon, APIError>) in
 	switch result {
 	case .success(let pokemon):
