@@ -38,6 +38,14 @@ class JWKSClient: JWKSClientProviding {
 	}
 }
 
+class MockJWKSClient: JWKSClientProviding {
+	var stub = [JWK(value: "JWK1"), JWK(value: "JWK2")]
+	func fetchJWKS() async throws -> [JWK] {
+		try await Task.sleep(seconds: 2)
+		return stub
+	}
+}
+
 protocol KeyExchangeProviding {
 	func exchange(key: OKP) async throws -> JWS
 }
@@ -60,15 +68,38 @@ class ViewCardClient: ViewCardProviding {
 	}
 }
 
-Task {
-	let jwksClient = JWKSClient()
-	let keyExchangeClient = KeyExchangeClient()
-	let viewCardClient = ViewCardClient()
+
+class Entity {
 	
-	let jwks = try await jwksClient.fetchJWKS()
-	let jws = try await keyExchangeClient.exchange(key: OKP(value: "key"))
-	let card = try await viewCardClient.getCardDetails()
+	let jwksClient: JWKSClientProviding
+	let keyExchangeClient: KeyExchangeProviding
+	let viewCardClient: ViewCardProviding
 	
-	print("card \(card)")
+	init(jwksClient: JWKSClientProviding,
+		 keyExchangeClient: KeyExchangeProviding,
+		 viewCardClient: ViewCardProviding) {
+		self.jwksClient = jwksClient
+		self.keyExchangeClient = keyExchangeClient
+		self.viewCardClient = viewCardClient
+	}
+	
+	func getCardDetails() async throws -> Card {
+//		let jwks = try await jwksClient.fetchJWKS()
+//		let jws = try await keyExchangeClient.exchange(key: OKP(value: "key"))
+		let card = try await viewCardClient.getCardDetails()
+		return card
+	}
 }
 
+let entity = Entity(jwksClient: MockJWKSClient(),
+					keyExchangeClient: KeyExchangeClient(),
+					viewCardClient: ViewCardClient())
+
+Task {
+	do {
+		let card = try await entity.getCardDetails()
+		print(card)
+	} catch {
+		print("Error: \(error)")
+	}
+}
