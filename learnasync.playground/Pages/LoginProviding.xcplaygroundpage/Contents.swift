@@ -44,40 +44,13 @@ class LoginClient: LoginProviding {
 	}
 }
 
-class LoginEntity {
-	let loginClient: LoginProviding
-	
-	init(loginClient: LoginProviding) {
-		self.loginClient = loginClient
-	}
-	
-	func login() {
-		Task {
-			do {
-				for await status in await loginClient.login(email: "test@example.com", password: "password") {
-					switch status {
-					case .notStarted:
-						print("Login not started")
-					case .inProgress:
-						print("Login in progress")
-					case .success:
-						print("Login successful")
-					case .failure:
-						print("Login failed")
-					}
-				}
-			} catch {
-				print("Error: \(error)")
-			}
-		}
-	}
-}
 
-class TestLoginProvider: LoginProviding {
+class MockLoginProvider: Mock<LoginProviding>, LoginProviding {
 	var statuses: [LoginStatus] = []
 	private var currentIndex = 0
 	
 	func login(email: String, password: String) async -> AsyncStream<LoginStatus> {
+		accept(args: [email, password])
 		return AsyncStream { continuation in
 			for status in statuses {
 				continuation.yield(status)
@@ -88,9 +61,59 @@ class TestLoginProvider: LoginProviding {
 }
 
 
-let testProvider = TestLoginProvider()
-testProvider.statuses = [.notStarted, .inProgress, .success]
+class LoginEntity {
+	let loginClient: LoginProviding
+	
+	var overlayText: String = ""
+	
+	init(loginClient: LoginProviding) {
+		self.loginClient = loginClient
+	}
+	
+	func login() {
+		Task {
+			for await status in await loginClient.login(email: "test@example.com", password: "password") {
+				switch status {
+				case .notStarted:
+					overlayText = "Login not started"
+				case .inProgress:
+					overlayText = "Login in progress"
+				case .success:
+					overlayText = "Login successful"
+				case .failure:
+					overlayText = "Login failed"
+				}
+				print(overlayText)
+			}
+		}
+	}
+}
 
-let entity = LoginEntity(loginClient: testProvider)
-entity.login()
+//let entity = LoginEntity(loginClient: mockLoginClient)
+//entity.login()
 
+import XCTest
+
+class LoginEntityTest: XCTestCase {
+	
+	private let mockLoginProvider = MockLoginProvider.create()
+	
+	private func verify(file: StaticString = #file,
+						line: UInt = #line) {
+		mockLoginProvider.verify(file: file, line: line)
+	}
+
+	func testLoginEntityOverlayText() {
+		
+		let entity = LoginEntity(loginClient: mockLoginProvider)
+		
+		mockLoginProvider.statuses = [.notStarted, .inProgress, .success]
+		
+		entity.login()
+		
+		verify()
+	}
+}
+
+let test = LoginEntityTest()
+test.testLoginEntityOverlayText()
