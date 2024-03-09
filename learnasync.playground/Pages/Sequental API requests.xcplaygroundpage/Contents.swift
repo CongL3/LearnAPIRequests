@@ -57,6 +57,15 @@ class KeyExchangeClient: KeyExchangeProviding {
 	}
 }
 
+class ErrorKeyExchangeClient: KeyExchangeProviding {
+	func exchange(key: OKP) async throws -> JWS {
+		try await Task.sleep(seconds: 2)
+		throw APIError.decodingError
+		return JWS(value: "JWS1")
+	}
+}
+
+
 protocol ViewCardProviding {
 	func getCardDetails() async throws -> Card
 }
@@ -84,8 +93,8 @@ class Entity {
 	}
 	
 	func getCardDetails() async throws -> Card {
-//		let jwks = try await jwksClient.fetchJWKS()
-//		let jws = try await keyExchangeClient.exchange(key: OKP(value: "key"))
+		let jwks = try await jwksClient.fetchJWKS()
+		let jws = try await keyExchangeClient.exchange(key: OKP(value: "key"))
 		let card = try await viewCardClient.getCardDetails()
 		return card
 	}
