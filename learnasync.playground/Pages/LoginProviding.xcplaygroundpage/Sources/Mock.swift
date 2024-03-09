@@ -112,6 +112,23 @@ public final class MockExpectationBuilder<M, R>: MockExpectationHandler {
 		}
 	}
 	
+	/// Adds an async block action which will be performed if the expected call is made.
+	/// - Parameter block: async action block
+	/// - Returns: `MockExpectationBuilder`
+	@discardableResult
+	public func doingAsync(_ block: @escaping ([Any?]) async throws -> Void) -> MockExpectationBuilder<M, R> {
+		actions.append { args in
+			_ = Task {
+				do {
+					try await block(args)
+				} catch {
+					// Handle errors here if needed
+				}
+			}
+		}
+		return self
+	}
+
 	/// Adds the expected throwing function call to this expectation builder.
 	/// - Parameters:
 	///   - callSummary: A unique string which describes the call - including
@@ -331,6 +348,50 @@ open class Mock<M> {
 		return expectationCreator.builder(callBlock: callBlock, mockInit: type(of: self).init)
 	}
 	
+	@discardableResult
+	public func expectAsync<R>(_ callBlock: @escaping (M) async throws -> R) -> MockExpectationBuilder<M, ([Any?]) async throws -> R> {
+		guard let expectationCreator = (expectationHandler as? MockExpectationConsumer)?.expectationCreator else {
+			preconditionFailure("Internal error")
+		}
+		
+		let builder = expectationCreator.builder(callBlock: { mock in
+			return { (args: [Any?]) async throws -> R in
+				return try await Task {
+					do {
+						let result = try await callBlock(mock)
+						return result
+					} catch {
+						throw error
+					}
+				}.value
+			}
+		}, mockInit: type(of: self).init)
+		return builder
+	}
+
+	
+//	@discardableResult
+//	public func expectAsync<R>(_ callBlock: @escaping (M) async throws -> R) -> MockExpectationBuilder<M, R> {
+//		guard let expectationCreator = (expectationHandler as? MockExpectationConsumer)?.expectationCreator else {
+//			preconditionFailure("internal error")
+//		}
+//		
+//		// Use Task to execute the async call block
+//		return expectationCreator.builder(callBlock: { mock in
+//			return { (args: [Any?]) async throws -> Task<R, Error> in
+//				return Task {
+//					do {
+//						let result = try await callBlock(mock)
+//						return result
+//					} catch {
+//						// Handle errors here if needed
+//						throw error
+//					}
+//				}
+//			} as! R
+//		}, mockInit: type(of: self).init)
+//	}
+
 	/// Verifies that the expectated function calls have all been satisfied.
 	/// - Parameters:
 	///   - file: Calling file.

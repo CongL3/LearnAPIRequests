@@ -16,21 +16,19 @@ class LoginEntity {
 		self.loginClient = loginClient
 	}
 	
-	func login(email: String, password: String) {
-		Task {
-			for await status in await loginClient.login(email: email, password: password) {
-				switch status {
-				case .notStarted:
-					overlayText = "Login not started"
-				case .inProgress:
-					overlayText = "Login in progress"
-				case .success:
-					overlayText = "Login successful"
-				case .failure:
-					overlayText = "Login failed"
-				}
-				print(overlayText)
+	func login(email: String, password: String) async {
+		for await status in await loginClient.login(email: email, password: password) {
+			switch status {
+			case .notStarted:
+				overlayText = "Login not started"
+			case .inProgress:
+				overlayText = "Login in progress"
+			case .success:
+				overlayText = "Login successful"
+			case .failure:
+				overlayText = "Login failed"
 			}
+			print(overlayText)
 		}
 	}
 }
